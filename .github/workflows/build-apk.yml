@@ -34,8 +34,24 @@ jobs:
       - name: Recreate Android Project Scaffold
         run: |
           flutter create . --org com.jasanet --project-name mas_mobile --platforms android
-          # Tambahkan permissions ke AndroidManifest.xml
+          # inject permissions
           sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET"/>\n    <uses-permission android:name="android.permission.CAMERA"/>\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>\n    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>' android/app/src/main/AndroidManifest.xml
+          # fix legacy plugin compileSdkVersion in app build.gradle
+          sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 35/g' android/app/build.gradle
+          sed -i 's/targetSdk = flutter.targetSdkVersion/targetSdk = 35/g' android/app/build.gradle
+          # add fallback compileSdkVersion for legacy plugins like geolocator_android
+          cat << 'SUB_EOF' >> android/build.gradle
+subprojects {
+    afterEvaluate { project ->
+        if (project.hasProperty("android")) {
+            android {
+                compileSdkVersion 35
+                buildToolsVersion "35.0.0"
+            }
+        }
+    }
+}
+SUB_EOF
 
       - name: Install dependencies
         run: flutter pub get
