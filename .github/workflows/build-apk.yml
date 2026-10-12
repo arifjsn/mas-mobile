@@ -31,14 +31,11 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Recreate Android Project Files via Flutter CLI
+      - name: Recreate Android Project Scaffold
         run: |
-          # Backup custom manifest with camera & location permissions
-          cp android/app/src/main/AndroidManifest.xml /tmp/AndroidManifest.custom.xml
-          # Run flutter create to scaffold official Android Gradle configuration
           flutter create . --org com.jasanet --project-name mas_mobile --platforms android
-          # Restore custom permissions
-          cp /tmp/AndroidManifest.custom.xml android/app/src/main/AndroidManifest.xml
+          # Tambahkan permissions ke AndroidManifest.xml
+          sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET"/>\n    <uses-permission android:name="android.permission.CAMERA"/>\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>\n    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>' android/app/src/main/AndroidManifest.xml
 
       - name: Install dependencies
         run: flutter pub get
