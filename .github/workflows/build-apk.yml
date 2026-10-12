@@ -30,14 +30,10 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Recreate Android Project Scaffold
+      - name: Scaffold Android
         run: |
           flutter create . --org com.jasanet --project-name mas_mobile --platforms android
           sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET"/>\n    <uses-permission android:name="android.permission.CAMERA"/>\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>\n    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>' android/app/src/main/AndroidManifest.xml
-          sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 34/g' android/app/build.gradle
-          sed -i 's/targetSdk = flutter.targetSdkVersion/targetSdk = 34/g' android/app/build.gradle
-          sed -i 's/minSdk = flutter.minSdkVersion/minSdk = 21/g' android/app/build.gradle
-          printf "\nsubprojects { project ->\n    afterEvaluate {\n        if (project.hasProperty('android')) {\n            project.android {\n                compileSdkVersion 34\n                buildToolsVersion '34.0.0'\n            }\n        }\n    }\n}\n" >> android/app/build.gradle
 
       - name: Install dependencies
         run: flutter pub get
