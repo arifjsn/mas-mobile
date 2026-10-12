@@ -43,7 +43,34 @@ jobs:
       - name: Generate App Launcher Icons
         run: dart run flutter_launcher_icons
 
+      - name: Configure persistent release signing
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/release.p12
+          python3 - <<'PYTHON'
+          from pathlib import Path
+          path = Path('android/app/build.gradle.kts')
+          text = path.read_text()
+          text = text.replace('    buildTypes {', '''    signingConfigs {
+                  create("release") {
+                      storeFile = file("release.p12")
+                      storeType = "PKCS12"
+                      storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                      keyAlias = "mas-release"
+                      keyPassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                  }
+              }
+              buildTypes {''')
+          assert 'signingConfigs.getByName("debug")' in text
+          text = text.replace('signingConfigs.getByName("debug")', 'signingConfigs.getByName("release")')
+          path.write_text(text)
+          PYTHON
+
       - name: Build APK (Release)
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: flutter build apk --release
 
       - name: Get tag or generate release name
@@ -52,7 +79,7 @@ jobs:
           if [ -n "${{ github.ref_name }}" ] && [[ "${{ github.ref_name }}" == v* ]]; then
             echo "tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
           else
-            TAG_NAME="v1.0.2"
+            TAG_NAME="v1.0.3"
             echo "tag=${TAG_NAME}" >> $GITHUB_OUTPUT
           fi
 
@@ -68,6 +95,7 @@ jobs:
             ## Mitra-Asset System (MAS) Mobile Release ${{ steps.release_info.outputs.tag }}
             - Logo aplikasi custom PT Jasanet (bukan icon default Flutter)
             - Preview kamera menjaga rasio asli; wajah tidak dipaksa mengikuti ukuran kotak
-            - Fitur Presensi Staff (Selfie Camera) & integrasi backend MAS
+            - Perbaikan pengiriman token CSRF untuk check-in/check-out
+            - Signing key tetap untuk update berikutnya; instalasi lama perlu uninstall sekali
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

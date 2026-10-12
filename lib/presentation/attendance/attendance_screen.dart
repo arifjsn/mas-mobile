@@ -49,11 +49,19 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     setState(() => _isSubmitting = true);
 
     try {
+      final session = await ApiClient().dio.get(
+        '${AppConstants.apiBase}/auth.php?action=check',
+      );
+      final token = session.data['csrf_token'];
+      if (session.data['logged_in'] != true || token is! String) {
+        throw Exception('Sesi berakhir. Silakan login kembali.');
+      }
       final xFile = await _cameraController!.takePicture();
       final bytes = await xFile.readAsBytes();
       final base64Image = 'data:image/jpeg;base64,${base64Encode(bytes)}';
 
       final formData = FormData.fromMap({
+        'csrf_token': token,
         'type': _attendanceType,
         'photo': base64Image,
         'notes': _notesController.text.trim(),
