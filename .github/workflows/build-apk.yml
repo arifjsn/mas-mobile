@@ -27,7 +27,6 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'
           channel: 'stable'
           cache: true
 
@@ -36,12 +35,24 @@ jobs:
           flutter create . --org com.jasanet --project-name mas_mobile --platforms android
           # Tambah permissions kamera & GPS
           sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET"/>\n    <uses-permission android:name="android.permission.CAMERA"/>\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>\n    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>' android/app/src/main/AndroidManifest.xml
-          # Set compileSdk & targetSdk 34 (stable, avoid corrupted android-35 in runner image)
+          # Set compileSdk 34 & targetSdk 34
           sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 34/g' android/app/build.gradle
           sed -i 's/targetSdk = flutter.targetSdkVersion/targetSdk = 34/g' android/app/build.gradle
           sed -i 's/minSdk = flutter.minSdkVersion/minSdk = 21/g' android/app/build.gradle
-          # Upgrade Kotlin version di settings.gradle ke 1.9.24
-          sed -i 's/id "org.jetbrains.kotlin.android" version "[^"]*"/id "org.jetbrains.kotlin.android" version "1.9.24"/g' android/settings.gradle
+          # Fix subprojects compileSdk 34 for all plugins (overrides flutter_plugin_android_lifecycle SDK 35 requirement)
+          cat << 'SUB_EOF' >> android/app/build.gradle
+
+subprojects { project ->
+    afterEvaluate {
+        if (project.hasProperty("android")) {
+            project.android {
+                compileSdkVersion 34
+                buildToolsVersion "34.0.0"
+            }
+        }
+    }
+}
+SUB_EOF
 
       - name: Install dependencies
         run: flutter pub get
@@ -69,7 +80,7 @@ jobs:
           files: build/app/outputs/flutter-apk/app-release.apk
           body: |
             ## Mitra-Asset System (MAS) Mobile Release
-            - Built with Flutter 3.24
+            - Built with Flutter Latest Stable
             - Fitur Absensi Staff (Kamera selfie + Live GPS location)
             - Terintegrasi langsung dengan backend https://mas.jasanet.co.id
         env:
