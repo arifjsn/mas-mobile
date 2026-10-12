@@ -105,7 +105,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
             ),
             clipBehavior: Clip.antiAlias,
             child: _isCameraReady
-                ? CameraPreview(_cameraController!)
+                ? Center(child: CameraPreview(_cameraController!))
                 : const Center(child: CircularProgressIndicator(color: Colors.white)),
           ),
           const SizedBox(height: 16),

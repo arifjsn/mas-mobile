@@ -52,7 +52,7 @@ jobs:
           if [ -n "${{ github.ref_name }}" ] && [[ "${{ github.ref_name }}" == v* ]]; then
             echo "tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
           else
-            TAG_NAME="v1.0.1"
+            TAG_NAME="v1.0.2"
             echo "tag=${TAG_NAME}" >> $GITHUB_OUTPUT
           fi
 
@@ -67,7 +67,7 @@ jobs:
           body: |
             ## Mitra-Asset System (MAS) Mobile Release ${{ steps.release_info.outputs.tag }}
             - Logo aplikasi custom PT Jasanet (bukan icon default Flutter)
-            - Endpoint login API native (`/api/auth.php`) bypass proteksi web redirect / form CSRF token
+            - Preview kamera menjaga rasio asli; wajah tidak dipaksa mengikuti ukuran kotak
             - Fitur Presensi Staff (Selfie Camera) & integrasi backend MAS
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
