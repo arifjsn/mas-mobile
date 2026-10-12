@@ -1,8 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:geocoding/geocoding.dart';
+import 'package:location/location.dart';
 import 'package:dio/dio.dart';
 import '../../core/api/api_client.dart';
 import '../../core/constants/app_constants.dart';
@@ -17,8 +16,8 @@ class AttendanceScreen extends StatefulWidget {
 class _AttendanceScreenState extends State<AttendanceScreen> {
   CameraController? _cameraController;
   bool _isCameraReady = false;
-  Position? _currentPosition;
-  String? _currentAddress;
+  final Location _locationService = Location();
+  LocationData? _currentLocation;
   String _accuracyText = 'Mencari sinyal GPS...';
   Color _accuracyColor = Colors.orange;
   String _attendanceType = 'in'; // 'in' or 'out'
@@ -52,42 +51,40 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
   }
 
   Future<void> _initLocation() async {
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) return;
+    bool serviceEnabled = await _locationService.serviceEnabled();
+    if (!serviceEnabled) {
+      serviceEnabled = await _locationService.requestService();
+      if (!serviceEnabled) return;
     }
 
-    Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.bestForNavigation,
-        distanceFilter: 1,
-      ),
-    ).listen((position) async {
+    PermissionStatus permissionGranted = await _locationService.hasPermission();
+    if (permissionGranted == PermissionStatus.denied) {
+      permissionGranted = await _locationService.requestPermission();
+      if (permissionGranted != PermissionStatus.granted) return;
+    }
+
+    await _locationService.changeSettings(
+      accuracy: LocationAccuracy.high,
+      interval: 1000,
+      distanceFilter: 1,
+    );
+
+    _locationService.onLocationChanged.listen((loc) {
       if (!mounted) return;
       setState(() {
-        _currentPosition = position;
-        if (position.accuracy <= 20) {
-          _accuracyText = 'Akurat: ±${position.accuracy.round()}m';
+        _currentLocation = loc;
+        final acc = loc.accuracy ?? 999;
+        if (acc <= 20) {
+          _accuracyText = 'Akurat: ±${acc.round()}m';
           _accuracyColor = Colors.green;
-        } else if (position.accuracy <= 100) {
-          _accuracyText = 'Sedang: ±${position.accuracy.round()}m';
+        } else if (acc <= 100) {
+          _accuracyText = 'Sedang: ±${acc.round()}m';
           _accuracyColor = Colors.orange;
         } else {
-          _accuracyText = 'Kurang: ±${position.accuracy.round()}m';
+          _accuracyText = 'Kurang: ±${acc.round()}m';
           _accuracyColor = Colors.red;
         }
       });
-
-      try {
-        final placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
-        if (placemarks.isNotEmpty && mounted) {
-          final p = placemarks.first;
-          setState(() {
-            _currentAddress = '${p.street}, ${p.subLocality}, ${p.locality}';
-          });
-        }
-      } catch (_) {}
     });
   }
 
@@ -103,9 +100,8 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
       final formData = FormData.fromMap({
         'type': _attendanceType,
         'photo': base64Image,
-        'latitude': _currentPosition?.latitude ?? '',
-        'longitude': _currentPosition?.longitude ?? '',
-        'address': _currentAddress ?? '',
+        'latitude': _currentLocation?.latitude ?? '',
+        'longitude': _currentLocation?.longitude ?? '',
         'notes': _notesController.text.trim(),
       });
 
@@ -147,7 +143,6 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Camera Preview
           Container(
             height: 280,
             decoration: BoxDecoration(
@@ -160,7 +155,6 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                 : const Center(child: CircularProgressIndicator(color: Colors.white)),
           ),
           const SizedBox(height: 12),
-          // GPS Status
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -185,20 +179,15 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                     ),
                   ],
                 ),
-                if (_currentPosition != null) ...[
+                if (_currentLocation != null) ...[
                   const SizedBox(height: 4),
-                  Text('Lat: ${_currentPosition!.latitude.toStringAsFixed(6)}, Lng: ${_currentPosition!.longitude.toStringAsFixed(6)}',
+                  Text('Lat: ${_currentLocation!.latitude?.toStringAsFixed(6)}, Lng: ${_currentLocation!.longitude?.toStringAsFixed(6)}',
                       style: const TextStyle(fontSize: 12, fontFamily: 'monospace')),
-                ],
-                if (_currentAddress != null) ...[
-                  const SizedBox(height: 4),
-                  Text(_currentAddress!, style: const TextStyle(fontSize: 12, color: Colors.black87)),
                 ],
               ],
             ),
           ),
           const SizedBox(height: 16),
-          // Type selector
           Row(
             children: [
               Expanded(
