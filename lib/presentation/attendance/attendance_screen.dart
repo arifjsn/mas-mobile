@@ -192,7 +192,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                 ],
                 if (_currentAddress != null) ...[
                   const SizedBox(height: 4),
-                  Text(_currentAddress!, style: const TextStyle(fontSize: 12, color: Colors.black800)),
+                  Text(_currentAddress!, style: const TextStyle(fontSize: 12, color: Colors.black87)),
                 ],
               ],
             ),
