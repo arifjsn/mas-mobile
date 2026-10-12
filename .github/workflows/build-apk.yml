@@ -33,26 +33,11 @@ jobs:
       - name: Recreate Android Project Scaffold
         run: |
           flutter create . --org com.jasanet --project-name mas_mobile --platforms android
-          # Tambah permissions kamera & GPS
           sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET"/>\n    <uses-permission android:name="android.permission.CAMERA"/>\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>\n    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>' android/app/src/main/AndroidManifest.xml
-          # Set compileSdk 34 & targetSdk 34
           sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 34/g' android/app/build.gradle
           sed -i 's/targetSdk = flutter.targetSdkVersion/targetSdk = 34/g' android/app/build.gradle
           sed -i 's/minSdk = flutter.minSdkVersion/minSdk = 21/g' android/app/build.gradle
-          # Fix subprojects compileSdk 34 for all plugins (overrides flutter_plugin_android_lifecycle SDK 35 requirement)
-          cat << 'SUB_EOF' >> android/app/build.gradle
-
-subprojects { project ->
-    afterEvaluate {
-        if (project.hasProperty("android")) {
-            project.android {
-                compileSdkVersion 34
-                buildToolsVersion "34.0.0"
-            }
-        }
-    }
-}
-SUB_EOF
+          printf "\nsubprojects { project ->\n    afterEvaluate {\n        if (project.hasProperty('android')) {\n            project.android {\n                compileSdkVersion 34\n                buildToolsVersion '34.0.0'\n            }\n        }\n    }\n}\n" >> android/app/build.gradle
 
       - name: Install dependencies
         run: flutter pub get
