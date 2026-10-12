@@ -4,7 +4,7 @@ class AppConstants {
   static const String apiBase = '$baseUrl/api';
 
   // API Endpoints
-  static const String loginUrl = '$baseUrl/auth/login.php';
+  static const String loginUrl = '$apiBase/auth.php?action=login';
   static const String profileUrl = '$apiBase/profile.php';
   static const String attendancesUrl = '$apiBase/attendances.php';
   static const String servicesUrl = '$apiBase/services.php';

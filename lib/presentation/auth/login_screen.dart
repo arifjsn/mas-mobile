@@ -37,27 +37,30 @@ class _LoginScreenState extends State<LoginScreen> {
         },
       );
 
-      // In MAS backend session-cookie is preserved via CookieManager
-      if (response.statusCode == 200 || response.statusCode == 302) {
-        // Fetch user profile to verify
-        final profileRes = await ApiClient().dio.get(AppConstants.profileUrl);
-        final profile = profileRes.data;
-
+      final data = response.data;
+      if (data is Map && data['success'] == true) {
+        final userData = data['user'] as Map<String, dynamic>?;
         if (!mounted) return;
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (_) => HomeScreen(
-              username: profile['username'] ?? username,
-              role: profile['role'] ?? 'user',
+              username: userData?['username'] ?? username,
+              role: userData?['role'] ?? 'staff',
             ),
           ),
         );
+      } else {
+        final errorMsg = (data is Map && data['error'] != null)
+            ? data['error'].toString()
+            : 'Login gagal, periksa akun Anda';
+        throw Exception(errorMsg);
       }
     } catch (e) {
       if (!mounted) return;
+      String err = e.toString().replaceFirst('Exception: ', '');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Login gagal: $e'), backgroundColor: Colors.red),
+        SnackBar(content: Text(err), backgroundColor: Colors.red),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -74,8 +77,13 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.inventory_2_rounded, size: 72, color: Colors.blue.shade700),
-              const SizedBox(height: 12),
+              Image.asset(
+                'assets/icons/app_logo.png',
+                height: 72,
+                errorBuilder: (context, error, stackTrace) =>
+                    Icon(Icons.inventory_2_rounded, size: 72, color: Colors.blue.shade700),
+              ),
+              const SizedBox(height: 16),
               Text(
                 AppConstants.appName,
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.blue.shade900),

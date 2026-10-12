@@ -34,9 +34,14 @@ jobs:
         run: |
           flutter create . --org com.jasanet --project-name mas_mobile --platforms android
           sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET"/>\n    <uses-permission android:name="android.permission.CAMERA"/>' android/app/src/main/AndroidManifest.xml
+          # Set Android app icon in manifest to launcher_icon
+          sed -i 's/android:icon="@mipmap\/ic_launcher"/android:icon="@mipmap\/launcher_icon"/g' android/app/src/main/AndroidManifest.xml
 
       - name: Install dependencies
         run: flutter pub get
+
+      - name: Generate App Launcher Icons
+        run: dart run flutter_launcher_icons
 
       - name: Build APK (Release)
         run: flutter build apk --release
@@ -47,7 +52,7 @@ jobs:
           if [ -n "${{ github.ref_name }}" ] && [[ "${{ github.ref_name }}" == v* ]]; then
             echo "tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
           else
-            TAG_NAME="v1.0.0-$(date +'%Y%m%d%H%M')"
+            TAG_NAME="v1.0.1"
             echo "tag=${TAG_NAME}" >> $GITHUB_OUTPUT
           fi
 
@@ -60,9 +65,9 @@ jobs:
           prerelease: false
           files: build/app/outputs/flutter-apk/app-release.apk
           body: |
-            ## Mitra-Asset System (MAS) Mobile Release
-            - Built with Flutter Latest Stable
-            - Fitur Presensi Staff (Selfie Camera)
-            - Terintegrasi langsung dengan backend https://mas.jasanet.co.id
+            ## Mitra-Asset System (MAS) Mobile Release ${{ steps.release_info.outputs.tag }}
+            - Logo aplikasi custom PT Jasanet (bukan icon default Flutter)
+            - Endpoint login API native (`/api/auth.php`) bypass proteksi web redirect / form CSRF token
+            - Fitur Presensi Staff (Selfie Camera) & integrasi backend MAS
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
