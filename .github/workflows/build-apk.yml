@@ -33,18 +33,13 @@ jobs:
       - name: Scaffold Android
         run: |
           flutter create . --org com.jasanet --project-name mas_mobile --platforms android
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET"/>\n    <uses-permission android:name="android.permission.CAMERA"/>\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>\n    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>' android/app/src/main/AndroidManifest.xml
+          sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET"/>\n    <uses-permission android:name="android.permission.CAMERA"/>' android/app/src/main/AndroidManifest.xml
 
       - name: Install dependencies
         run: flutter pub get
 
       - name: Build APK (Release)
-        run: |
-          cd android
-          ./gradlew assembleRelease -Pandroid.experimental.checkAarMetadata=false -Dorg.gradle.jvmargs="-Xmx4G -XX:MaxMetaspaceSize=1G"
-          cd ..
-          mkdir -p build/app/outputs/flutter-apk
-          cp android/app/build/outputs/apk/release/app-release.apk build/app/outputs/flutter-apk/app-release.apk
+        run: flutter build apk --release
 
       - name: Get tag or generate release name
         id: release_info
@@ -67,7 +62,7 @@ jobs:
           body: |
             ## Mitra-Asset System (MAS) Mobile Release
             - Built with Flutter Latest Stable
-            - Fitur Absensi Staff (Kamera selfie + Live GPS location)
+            - Fitur Presensi Staff (Selfie Camera)
             - Terintegrasi langsung dengan backend https://mas.jasanet.co.id
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
